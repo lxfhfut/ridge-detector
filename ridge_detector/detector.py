@@ -776,7 +776,8 @@ class RidgeDetector:
 
         # Normalize to uint8 if needed
         if self.image.dtype != np.uint8:
-            self.image = ((image - image.min()) / (image.max() - image.min()) * 255).astype(np.uint8)
+            img = self.image.astype(float)
+            self.image = ((img - img.min()) / (img.max() - img.min() + 1e-12) * 255).astype(np.uint8)
 
         # Convert to grayscale
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_RGB2GRAY) if self.image.ndim == 3 else self.image
