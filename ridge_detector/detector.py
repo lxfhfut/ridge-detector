@@ -754,18 +754,18 @@ class RidgeDetector:
         if self.min_len <= 0:
             return
 
-        id_remove = []
+        idx_remove = set()
         conts = []
         for i in range(len(self.contours)):
             cont_len = self.contours[i].estimate_length()
             if cont_len < self.min_len or (0 < self.max_len < cont_len):
-                id_remove.append(self.contours[i].id)
+                idx_remove.add(i)
             else:
                 conts.append(self.contours[i])
 
         juncs = []
         for junc in self.junctions:
-            if junc.cont1 not in id_remove and junc.cont2 not in id_remove:
+            if junc.cont1 not in idx_remove and junc.cont2 not in idx_remove:
                 juncs.append(junc)
 
         self.contours = conts
