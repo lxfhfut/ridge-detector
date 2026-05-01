@@ -396,7 +396,7 @@ def interpolate_gradient_test(grady, gradx, py, px):
 
     gy1, gx1 = grady[giy, gix], gradx[giy, gix]
     gy2, gx2 = grady[giy + 1, gix], gradx[giy + 1, gix]
-    gy3, gx3 = grady[giy, gix + 1], grady[giy, gix + 1]
+    gy3, gx3 = grady[giy, gix + 1], gradx[giy, gix + 1]
     gy4, gx4 = grady[giy + 1, gix + 1], gradx[giy + 1, gix + 1]
 
     gy = (1 - gfy) * ((1 - gfx) * gy1 + gfx * gy2) + gfy * ((1 - gfx) * gy3 + gfx * gy4)
