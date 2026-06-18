@@ -10,144 +10,6 @@ from ridge_detector.utils import (LinesUtil, Junction, Crossref, Line, convolve_
                    closest_point, normalize_to_half_circle)
 
 
-def _clamp_widths_to_curvature(cont):
-    """Clamp width_r and width_l so offset curves don't cross at high-curvature points."""
-    n = cont.num
-    if n < 3:
-        return cont.width_r.copy(), cont.width_l.copy()
-
-    wr = cont.width_r.copy()
-    wl = cont.width_l.copy()
-
-    for j in range(1, n - 1):
-        dx1 = cont.col[j] - cont.col[j - 1]
-        dy1 = cont.row[j] - cont.row[j - 1]
-        dx2 = cont.col[j + 1] - cont.col[j]
-        dy2 = cont.row[j + 1] - cont.row[j]
-        ds1 = np.sqrt(dx1 ** 2 + dy1 ** 2)
-        ds2 = np.sqrt(dx2 ** 2 + dy2 ** 2)
-        ds = (ds1 + ds2) / 2
-        if ds < 1e-10:
-            continue
-        dtheta = np.arctan2(dy2, dx2) - np.arctan2(dy1, dx1)
-        if dtheta > np.pi:
-            dtheta -= 2 * np.pi
-        elif dtheta < -np.pi:
-            dtheta += 2 * np.pi
-        curvature = dtheta / ds
-        if abs(curvature) < 1e-10:
-            continue
-        radius = 1.0 / abs(curvature)
-        if curvature > 0:
-            wl[j] = min(wl[j], radius * 0.9)
-        else:
-            wr[j] = min(wr[j], radius * 0.9)
-
-    return wr, wl
-
-
-def _points_close(a, b, eps=1e-9):
-    return abs(a[0] - b[0]) <= eps and abs(a[1] - b[1]) <= eps
-
-
-def _orientation(a, b, c):
-    value = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
-    if abs(value) <= 1e-9:
-        return 0
-    return 1 if value > 0 else -1
-
-
-def _on_segment(a, b, c):
-    return (min(a[0], c[0]) - 1e-9 <= b[0] <= max(a[0], c[0]) + 1e-9 and
-            min(a[1], c[1]) - 1e-9 <= b[1] <= max(a[1], c[1]) + 1e-9)
-
-
-def _segments_intersect(a, b, c, d):
-    if _points_close(a, c) or _points_close(a, d) or _points_close(b, c) or _points_close(b, d):
-        return False
-
-    o1 = _orientation(a, b, c)
-    o2 = _orientation(a, b, d)
-    o3 = _orientation(c, d, a)
-    o4 = _orientation(c, d, b)
-
-    if o1 != o2 and o3 != o4:
-        return True
-    if o1 == 0 and _on_segment(a, c, b):
-        return True
-    if o2 == 0 and _on_segment(a, d, b):
-        return True
-    if o3 == 0 and _on_segment(c, a, d):
-        return True
-    if o4 == 0 and _on_segment(c, b, d):
-        return True
-    return False
-
-
-def _segment_crosses_any(segment, segments):
-    a, b = segment
-    return any(_segments_intersect(a, b, c, d) for c, d in segments)
-
-
-def _build_width_outline_segments(cont, round_points=False, clamp_points=None):
-    wr, wl = _clamp_widths_to_curvature(cont)
-    paired_segments = []
-    right_points, left_points = [], []
-    right_segments, left_segments = [], []
-    all_right_segments, all_left_segments = [], []
-
-    def format_point(point):
-        x, y = point
-        if round_points:
-            x, y = round(x), round(y)
-        if clamp_points is not None:
-            width, height = clamp_points
-            x = max(0, min(x, width - 1))
-            y = max(0, min(y, height - 1))
-        return [x, y]
-
-    def flush():
-        nonlocal right_points, left_points, right_segments, left_segments
-        if len(right_points) > 1 and len(left_points) > 1:
-            paired_segments.append((np.array(right_points), np.array(left_points)))
-            all_right_segments.extend(right_segments)
-            all_left_segments.extend(left_segments)
-        right_points, left_points = [], []
-        right_segments, left_segments = [], []
-
-    for j in range(cont.num):
-        if wr[j] <= 0 or wl[j] <= 0:
-            flush()
-            continue
-
-        px, py = cont.col[j], cont.row[j]
-        nx, ny = np.cos(cont.angle[j]), np.sin(cont.angle[j])
-        right = (px + wr[j] * nx, py + wr[j] * ny)
-        left = (px - wl[j] * nx, py - wl[j] * ny)
-
-        if right_points:
-            prev_right = tuple(right_points[-1])
-            prev_left = tuple(left_points[-1])
-            right_segment = (prev_right, right)
-            left_segment = (prev_left, left)
-            if (_segments_intersect(*right_segment, *left_segment) or
-                    _segment_crosses_any(right_segment, left_segments + all_left_segments) or
-                    _segment_crosses_any(left_segment, right_segments + all_right_segments)):
-                flush()
-
-        if right_points:
-            prev_right = tuple(right_points[-1])
-            prev_left = tuple(left_points[-1])
-            right_segments.append((prev_right, right))
-            left_segments.append((prev_left, left))
-
-        right_points.append(format_point(right))
-        left_points.append(format_point(left))
-
-    flush()
-    return paired_segments
-
-
 class RidgeDetector:
     def __init__(self,
                  line_widths=np.arange(1, 3),
@@ -197,31 +59,6 @@ class RidgeDetector:
         self.posy = None
         self.ismax = None
         self.mode = LinesUtil.MODE_DARK if self.dark_line else LinesUtil.MODE_LIGHT
-
-    @staticmethod
-    def _orient_contour_angles_to_right(cont):
-        num_points = cont.num
-        if num_points <= 1:
-            return
-
-        for i in range(num_points):
-            if i == 0:
-                dy = cont.row[1] - cont.row[0]
-                dx = cont.col[1] - cont.col[0]
-            elif i == num_points - 1:
-                dy = cont.row[-1] - cont.row[-2]
-                dx = cont.col[-1] - cont.col[-2]
-            else:
-                dy = cont.row[i + 1] - cont.row[i - 1]
-                dx = cont.col[i + 1] - cont.col[i - 1]
-
-            if dy == 0 and dx == 0:
-                continue
-
-            ny = np.sin(cont.angle[i])
-            nx = np.cos(cont.angle[i])
-            if ny * dx - nx * dy < 0:
-                cont.angle[i] = (cont.angle[i] + np.pi) % (2 * np.pi)
 
     def apply_filtering(self):
         height, width = self.gray.shape[:2]
@@ -710,7 +547,7 @@ class RidgeDetector:
                     row.append(self.posy[y, x])
                     col.append(self.posx[y, x])
                     # Orient normal to the line direction with respect to the last normal
-                    ny, nx = self.normy[y, x], -self.normx[y, x]
+                    ny, nx = self.normy[y, x], self.normx[y, x]
 
                     beta = normalize_to_half_circle(np.arctan2(ny, nx))
                     diff1 = min(abs(beta - last_beta), 2.0 * np.pi - abs(beta - last_beta))
@@ -833,8 +670,18 @@ class RidgeDetector:
         if self.extend_line:
             self.extend_lines(label)
 
-        for tmp_cont in self.contours:
-            self._orient_contour_angles_to_right(tmp_cont)
+        # Adjust angles to point to the right of the line
+        for i in range(num_cont):
+            tmp_cont = self.contours[i]
+            num_pnt = tmp_cont.num
+            if num_pnt > 1:
+                k = (num_pnt - 1) // 2
+                dy, dx = tmp_cont.row[k + 1] - tmp_cont.row[k], tmp_cont.col[k + 1] - tmp_cont.col[k]
+                ny, nx = np.sin(tmp_cont.angle[k]), np.cos(tmp_cont.angle[k])
+
+                # If angles point to the left of the line, they have to be adapted
+                if ny * dx - nx * dy < 0:
+                    tmp_cont.angle = np.array([(ang + np.pi) % (2 * np.pi) for ang in tmp_cont.angle])
 
     def compute_line_width(self):
         height, width = self.grady.shape[:2]
@@ -962,17 +809,24 @@ class RidgeDetector:
         all_contour_points, all_width_left, all_width_right = [], [], []
         for cont in self.contours:
             num_points = cont.num
-            contour_points = []
+            contour_points, width_left, width_right = [], [], []
 
             for j in range(num_points):
                 px, py = cont.col[j], cont.row[j]
+                nx, ny = np.cos(cont.angle[j]), np.sin(cont.angle[j])
                 contour_points.append([round(px), round(py)])
+
+                if draw_width and self.estimate_width:
+                    px_r, py_r = px + cont.width_r[j] * nx, py + cont.width_r[j] * ny
+                    px_l, py_l = px - cont.width_l[j] * nx, py - cont.width_l[j] * ny
+
+                    width_right.append([round(px_r), round(py_r)])
+                    width_left.append([round(px_l), round(py_l)])
 
             all_contour_points.append(np.array(contour_points))
             if draw_width and self.estimate_width:
-                for width_right, width_left in _build_width_outline_segments(cont, round_points=True):
-                    all_width_right.append(width_right)
-                    all_width_left.append(width_left)
+                all_width_right.append(np.array(width_right))
+                all_width_left.append(np.array(width_left))
 
         if save_dir is None:
             save_dir = os.getcwd()
@@ -1021,19 +875,31 @@ class RidgeDetector:
         height, width = self.image.shape[:2]
         for cont in self.contours:
             num_points = cont.num
-            contour_points = []
+            last_w_r, last_w_l = 0, 0
+            contour_points, width_left, width_right = [], [], []
 
             for j in range(num_points):
                 px, py = cont.col[j], cont.row[j]
+                nx, ny = np.cos(cont.angle[j]), np.sin(cont.angle[j])
                 contour_points.append([LinesUtil.BC(round(px), width), LinesUtil.BR(round(py), height)])
+
+                if self.estimate_width:
+                    px_r, py_r = px + cont.width_r[j] * nx, py + cont.width_r[j] * ny
+                    px_l, py_l = px - cont.width_l[j] * nx, py - cont.width_l[j] * ny
+
+                    if last_w_r > 0 and cont.width_r[j] > 0:
+                        width_right.append([round(px_r), round(py_r)])
+
+                    if last_w_l > 0 and cont.width_l[j] > 0:
+                        width_left.append([round(px_l), round(py_l)])
+
+                    last_w_r, last_w_l = cont.width_r[j], cont.width_l[j]
 
             all_contour_points.append(np.array(contour_points))
 
             if self.estimate_width:
-                for width_right, width_left in _build_width_outline_segments(
-                        cont, round_points=True, clamp_points=(width, height)):
-                    all_width_right.append(width_right)
-                    all_width_left.append(width_left)
+                all_width_right.append(np.array(width_right))
+                all_width_left.append(np.array(width_left))
 
         if self.image.ndim == 2:
             result_img = np.repeat(self.image[:, :, None], 3, axis=2)
