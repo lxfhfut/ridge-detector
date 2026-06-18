@@ -126,16 +126,16 @@ class LinesUtil:
 
     class ContourClass(Enum):
         # The cont no junc
-        cont_no_junc = 1,
+        cont_no_junc = 1
         # The cont start junc
         # no end point is a junction
-        cont_start_junc = 2,
+        cont_start_junc = 2
         # The cont end junc.
         # only the start point of the line is a junction
-        cont_end_junc = 3,
+        cont_end_junc = 3
         # The cont both junc.
         # only the end point of the line is a junction
-        cont_both_junc = 4,
+        cont_both_junc = 4
         # The cont closed.
         # both end points of the line are junctions
         cont_closed = 5  # the contour is closed
@@ -320,7 +320,7 @@ def convolve_gauss(image, sigma, deriv_type):
     elif deriv_type == LinesUtil.DERIV_RC:
         hr, nr = compute_gauss_mask_1(sigma)
         hc, nc = compute_gauss_mask_1(sigma)
-    elif LinesUtil.DERIV_CC:
+    elif deriv_type == LinesUtil.DERIV_CC:
         hr, nr = compute_gauss_mask_0(sigma)
         hc, nc = compute_gauss_mask_2(sigma)
 

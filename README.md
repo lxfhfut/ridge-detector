@@ -17,7 +17,7 @@ This Python implementation offers a multi-scale adaptation of the ImageJ ridge d
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.9 or higher
 - Opencv & scikit-image
 
 
@@ -35,19 +35,19 @@ or
 ### Usage:
 ```python
 from ridge_detector import RidgeDetector
-det = RidgeDetector(line_widths=[1, 2, 3],  # Line widths to detect
-                    low_contrast=100,  # Lower bound of intensity contrast
-                    high_contrast=200,  # Higher bound of intensity contrast
-                    min_len=10, # Ignore ridges shorter than this length
-                    max_len=0, # Ignore ridges longer than this length, set to 0 for no limit
-                    dark_line=True, # Set to True if detecting black ridges in white background, False otherwise
-                    estimate_width=True, # Estimate width for each detected ridge point
-                    extend_line=True, # Tend to preserve ridges near junctions if set to True
-                    correct_pos=False,  # Correct ridge positions with asymmetric widths if set to True
+det = RidgeDetector(line_widths=[1, 2, 3],  # Line widths to detect (default: [1, 2])
+                    low_contrast=100,  # Lower bound of intensity contrast (default: 100)
+                    high_contrast=200,  # Higher bound of intensity contrast (default: 200)
+                    min_len=5, # Ignore ridges shorter than this length (default: 5)
+                    max_len=0, # Ignore ridges longer than this length, set to 0 for no limit (default: 0)
+                    dark_line=True, # Set to True if detecting black ridges in white background, False otherwise (default: True)
+                    estimate_width=True, # Estimate width for each detected ridge point (default: True)
+                    extend_line=False, # Tend to preserve ridges near junctions if set to True (default: False)
+                    correct_pos=False,  # Correct ridge positions with asymmetric widths if set to True (default: False)
                     )
 det.detect_lines("path_to_image_or_image_data_in_numpy_array")
 det.show_results()
-det.save_results("directory_to_store_results")  # Comment out if you want to save the detection results
+det.save_results("directory_to_store_results")  # Save the detection results to the specified directory
 ```
 
 ### Demonstrations

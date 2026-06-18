@@ -873,6 +873,8 @@ class Correct:
 
     @staticmethod
     def line_corrections(sigma, w_est, r_est):
+        if sigma == 0 or np.isnan(sigma) or np.isnan(w_est) or np.isnan(r_est):
+            return 0, 0, 0, 0, 0
         w_est /= sigma
         if w_est < 2 or w_est > 6 or r_est < 0 or r_est > 1:
             return 0, 0, 0, 0, 0
