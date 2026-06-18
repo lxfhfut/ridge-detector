@@ -35,7 +35,7 @@ or
 ### Usage:
 ```python
 from ridge_detector import RidgeDetector
-det = RidgeDetector(line_width=[1, 2, 3],  # Line widths to detect
+det = RidgeDetector(line_widths=[1, 2, 3],  # Line widths to detect
                     low_contrast=100,  # Lower bound of intensity contrast
                     high_contrast=200,  # Higher bound of intensity contrast
                     min_len=10, # Ignore ridges shorter than this length
