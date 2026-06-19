@@ -1,3 +1,4 @@
+import math
 import os
 import cv2
 import imageio.v3 as iio
@@ -208,7 +209,7 @@ class RidgeDetector:
                         continue
                     dy, dx = trow[1] - trow[0], tcol[1] - tcol[0]
                     alpha = tangle[0]
-                    ny, nx = np.sin(alpha), np.cos(alpha)
+                    ny, nx = math.sin(alpha), math.cos(alpha)
                     if ny * dx - nx * dy < 0:
                         # Turn the normal by +90 degrees.
                         my, mx = -nx, ny
@@ -229,7 +230,7 @@ class RidgeDetector:
                         continue
                     dy, dx = trow[num_pnt - 1] - trow[num_pnt - 2], tcol[num_pnt - 1] - tcol[num_pnt - 2]
                     alpha = tangle[num_pnt - 1]
-                    ny, nx = np.sin(alpha), np.cos(alpha)
+                    ny, nx = math.sin(alpha), math.cos(alpha)
                     if ny * dx - nx * dy < 0:
                         # Turn the normal by -90 degrees.
                         my, mx = nx, -ny
@@ -424,8 +425,8 @@ class RidgeDetector:
             col.append(maxx)
             nx = -self.normx[maxy, maxx]
             ny = self.normy[maxy, maxx]
-            alpha = normalize_to_half_circle(np.arctan2(ny, nx))
-            octant = int(np.floor(4.0 / np.pi * alpha + 0.5)) % 4
+            alpha = normalize_to_half_circle(math.atan2(ny, nx))
+            octant = int(math.floor(4.0 / math.pi * alpha + 0.5)) % 4
 
             ''' * Select normal to the line. The normal points to the right of the line as the
                 * line is traversed from 0 to num-1. Since the points are sorted in reverse
@@ -454,7 +455,7 @@ class RidgeDetector:
                 if self.ismax[nexty, nextx] > 0:
                     nx = -self.normx[nexty, nextx]
                     ny = self.normy[nexty, nextx]
-                    nextalpha = normalize_to_half_circle(np.arctan2(ny, nx))
+                    nextalpha = normalize_to_half_circle(math.atan2(ny, nx))
                     diff = abs(alpha - nextalpha)
                     if diff >= np.pi / 2.0:
                         diff = np.pi - diff
@@ -467,9 +468,9 @@ class RidgeDetector:
                 y, x = maxy, maxx
                 ny, nx = self.normy[y, x], -self.normx[y, x]
 
-                alpha = normalize_to_half_circle(np.arctan2(ny, nx))
-                last_octant = int(np.floor(4.0 / np.pi * alpha + 0.5)) % 4 if it == 1 else \
-                    int(np.floor(4.0 / np.pi * alpha + 0.5)) % 4 + 4
+                alpha = normalize_to_half_circle(math.atan2(ny, nx))
+                last_octant = int(math.floor(4.0 / math.pi * alpha + 0.5)) % 4 if it == 1 else \
+                    int(math.floor(4.0 / math.pi * alpha + 0.5)) % 4 + 4
                 last_beta = alpha + np.pi / 2.0
                 if last_beta >= 2.0 * np.pi:
                     last_beta -= 2.0 * np.pi
@@ -486,8 +487,8 @@ class RidgeDetector:
                     py, px = self.posy[y, x], self.posx[y, x]
 
                     # Orient line direction with respect to the last line direction
-                    alpha = normalize_to_half_circle(np.arctan2(ny, nx))
-                    octant = int(np.floor(4.0 / np.pi * alpha + 0.5)) % 4
+                    alpha = normalize_to_half_circle(math.atan2(ny, nx))
+                    octant = int(math.floor(4.0 / math.pi * alpha + 0.5)) % 4
 
                     if octant == 0 and 3 <= last_octant <= 5:
                         octant = 4
@@ -511,9 +512,9 @@ class RidgeDetector:
                             continue
                         nextpy, nextpx = self.posy[nexty, nextx], self.posx[nexty, nextx]
                         dy, dx = nextpy - py, nextpx - px
-                        dist = np.sqrt(dx ** 2 + dy ** 2)
+                        dist = math.sqrt(dx ** 2 + dy ** 2)
                         ny, nx = self.normy[nexty, nextx], -self.normx[nexty, nextx]
-                        nextalpha = normalize_to_half_circle(np.arctan2(ny, nx))
+                        nextalpha = normalize_to_half_circle(math.atan2(ny, nx))
                         diff = abs(alpha - nextalpha)
                         if diff >= np.pi / 2.0:
                             diff = np.pi - diff
@@ -531,7 +532,7 @@ class RidgeDetector:
                             continue
                         if self.ismax[nexty, nextx] > 0:
                             ny, nx = self.normy[nexty, nextx], -self.normx[nexty, nextx]
-                            nextalpha = normalize_to_half_circle(np.arctan2(ny, nx))
+                            nextalpha = normalize_to_half_circle(math.atan2(ny, nx))
                             diff = abs(alpha - nextalpha)
                             if diff >= np.pi / 2.0:
                                 diff = np.pi - diff
@@ -553,7 +554,7 @@ class RidgeDetector:
                     # Orient normal to the line direction with respect to the last normal
                     ny, nx = self.normy[y, x], self.normx[y, x]
 
-                    beta = normalize_to_half_circle(np.arctan2(ny, nx))
+                    beta = normalize_to_half_circle(math.atan2(ny, nx))
                     diff1 = min(abs(beta - last_beta), 2.0 * np.pi - abs(beta - last_beta))
                     alt_beta = (beta + np.pi) % (2.0 * np.pi)  # Normalize alternative beta
                     diff2 = min(abs(alt_beta - last_beta), 2.0 * np.pi - abs(alt_beta - last_beta))
@@ -681,11 +682,11 @@ class RidgeDetector:
             if num_pnt > 1:
                 k = (num_pnt - 1) // 2
                 dy, dx = tmp_cont.row[k + 1] - tmp_cont.row[k], tmp_cont.col[k + 1] - tmp_cont.col[k]
-                ny, nx = np.sin(tmp_cont.angle[k]), np.cos(tmp_cont.angle[k])
+                ny, nx = math.sin(tmp_cont.angle[k]), math.cos(tmp_cont.angle[k])
 
                 # If angles point to the left of the line, they have to be adapted
                 if ny * dx - nx * dy < 0:
-                    tmp_cont.angle = np.array([(ang + np.pi) % (2 * np.pi) for ang in tmp_cont.angle])
+                    tmp_cont.angle = (tmp_cont.angle + np.pi) % (2 * np.pi)
 
     def compute_line_width(self):
         height, width = self.grady.shape[:2]
