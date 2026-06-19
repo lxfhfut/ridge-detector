@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ridge-detector",
-    version="0.1.3",
+    version="0.1.4",
     author="Gavin Lin",
     author_email="lxfhfut@gmail.com",
     description="A multi-scale ridge detector for identifying curvilinear structures in images",
