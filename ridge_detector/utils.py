@@ -580,12 +580,10 @@ def fix_locations(cont, width_l, width_r, grad_l, grad_r, pos_y, pos_x, sigma_ma
         if not correct_end:
             correction[-1] = 0
 
-        for i in range(num_points):
-            py, px = pos_y[i], pos_x[i]
-            ny, nx = np.sin(cont.angle[i]), np.cos(cont.angle[i])
-            px += correction[i] * nx
-            py += correction[i] * ny
-            pos_y[i], pos_x[i] = py, px
+        nx = np.cos(cont.angle)
+        ny = np.sin(cont.angle)
+        pos_x += correction * nx
+        pos_y += correction * ny
 
     # Update position of line and add extracted width
     width_l = gaussian_filter1d(width_l, 3.0, mode='mirror')
