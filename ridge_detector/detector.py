@@ -725,14 +725,15 @@ class RidgeDetector:
             width_r = np.zeros(num_points, dtype=float)
             grad_l = np.zeros(num_points, dtype=float)
             grad_r = np.zeros(num_points, dtype=float)
-            pos_x = np.zeros(num_points, dtype=float)
-            pos_y = np.zeros(num_points, dtype=float)
+            pos_x = cont.col.copy()
+            pos_y = cont.row.copy()
+            angle_sin = np.sin(cont.angle)
+            angle_cos = np.cos(cont.angle)
 
             for j in range(num_points):
-                py, px = cont.row[j], cont.col[j]
-                pos_y[j], pos_x[j] = py, px
+                py, px = pos_y[j], pos_x[j]
                 r, c = LinesUtil.BR(round(py), height), LinesUtil.BC(round(px), width)
-                ny, nx = np.sin(cont.angle[j]), np.cos(cont.angle[j])
+                ny, nx = angle_sin[j], angle_cos[j]
 
                 line = bresenham(ny, nx, max_length[r, c])
                 num_line = line.shape[0]
