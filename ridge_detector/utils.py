@@ -587,10 +587,10 @@ def fix_locations(cont, width_l, width_r, grad_l, grad_r, pos_y, pos_x, sigma_ma
     # Update position of line and add extracted width
     width_l = gaussian_filter1d(width_l, 3.0, mode='mirror')
     width_r = gaussian_filter1d(width_r, 3.0, mode='mirror')
-    cont.width_l = np.array([float(w) for w in width_l])
-    cont.width_r = np.array([float(w) for w in width_r])
-    cont.row = np.array([float(y) for y in pos_y])
-    cont.col = np.array([float(x) for x in pos_x])
+    cont.width_l = np.asarray(width_l, dtype=float)
+    cont.width_r = np.asarray(width_r, dtype=float)
+    cont.row = np.asarray(pos_y, dtype=float)
+    cont.col = np.asarray(pos_x, dtype=float)
 
     return cont
 
