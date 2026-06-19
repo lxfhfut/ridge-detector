@@ -369,13 +369,21 @@ class RidgeDetector:
         num_cont, num_junc = 0, 0
         self.junctions, self.contours = [], []
 
-        cross = []
-        area = 0
-        for r_idx in range(height):
-            for c_idx in range(width):
-                if self.ismax[r_idx, c_idx] >= 2:
-                    area += 1
-                    cross.append(Crossref(r_idx, c_idx, self.eigval[r_idx, c_idx], False))
+        coords = np.argwhere(self.ismax >= 2)
+        area = len(coords)
+        if area > 0:
+            cross_y = coords[:, 0].copy()
+            cross_x = coords[:, 1].copy()
+            cross_val = self.eigval[cross_y, cross_x].copy()
+            sort_idx = np.argsort(-cross_val)
+            cross_y = cross_y[sort_idx]
+            cross_x = cross_x[sort_idx]
+            cross_val = cross_val[sort_idx]
+        else:
+            cross_y = np.empty(0, dtype=int)
+            cross_x = np.empty(0, dtype=int)
+            cross_val = np.empty(0, dtype=float)
+        cross_done = np.zeros(area, dtype=bool)
 
         response_2d = self.eigval.reshape(height, width)
         resp_dr = convolve(response_2d, kernel_r, mode='mirror')
@@ -385,24 +393,20 @@ class RidgeDetector:
         resp_drc = convolve(response_2d, kernel_rc, mode='mirror')
         resp_dcc = convolve(response_2d, kernel_cc, mode='mirror')
 
-        # Sorting cross list in ascending order by value
-        cross.sort()
-
-        # Updating indx based on the sorted cross list
-        for ci, cref in enumerate(cross):
-            indx[cref.y, cref.x] = ci + 1
+        if area > 0:
+            indx[cross_y, cross_x] = np.arange(1, area + 1)
 
         indx_max = 0
         while True:
             cls = LinesUtil.ContourClass.cont_no_junc
-            while indx_max < area and cross[indx_max].done:
+            while indx_max < area and cross_done[indx_max]:
                 indx_max += 1
 
             if indx_max == area:
                 break
 
-            max_val = cross[indx_max].value
-            maxy, maxx = cross[indx_max].y, cross[indx_max].x
+            max_val = cross_val[indx_max]
+            maxy, maxx = cross_y[indx_max], cross_x[indx_max]
             if max_val == 0.0:
                 break
 
@@ -413,7 +417,7 @@ class RidgeDetector:
             num_pnt = 0
             label[maxy, maxx] = num_cont + 1
             if indx[maxy, maxx] != 0:
-                cross[indx[maxy, maxx] - 1].done = True
+                cross_done[indx[maxy, maxx] - 1] = True
 
             # Select line direction
             row.append(maxy)
@@ -457,7 +461,7 @@ class RidgeDetector:
                     if diff < MAX_ANGLE_DIFFERENCE:
                         label[nexty, nextx] = num_cont + 1
                         if indx[nexty, nextx] != 0:
-                            cross[indx[nexty, nextx] - 1].done = True
+                            cross_done[indx[nexty, nextx] - 1] = True
 
             for it in range(1, 3):
                 y, x = maxy, maxx
@@ -534,7 +538,7 @@ class RidgeDetector:
                             if diff < MAX_ANGLE_DIFFERENCE:
                                 label[nexty, nextx] = num_cont + 1
                                 if not (indx[nexty, nextx] == 0):
-                                    cross[indx[nexty, nextx] - 1].done = True
+                                    cross_done[indx[nexty, nextx] - 1] = True
 
                     # Have we found the end of the line?
                     if not nextismax:
@@ -641,7 +645,7 @@ class RidgeDetector:
 
                     label[y, x] = num_cont + 1
                     if indx[y, x] != 0:
-                        cross[indx[y, x] - 1].done = True
+                        cross_done[indx[y, x] - 1] = True
 
             if num_pnt > 1:
                 # Create a new Line object and copy the current line's attributes
