@@ -1,5 +1,7 @@
 # Multi-Scale Ridge Detector
 
+If you find this project useful, please consider giving it a star so that more people can discover and benefit from it!
+
 ## Overview
 
 This repository contains the Python implementation of a multi-scale ridge detector designed for identifying and measuring curvilinear structures in images across various fields including medical imaging and remote sensing. For more detailed information, please refer to the following literature:
