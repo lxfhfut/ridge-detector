@@ -72,10 +72,9 @@ class Line:
         return 0 if dist_start < dist_end else self.num - 1
 
     def estimate_length(self):
-        length = 0
-        for i in range(1, self.num):
-            length += ((self.col[i] - self.col[i - 1]) ** 2 + (self.row[i] - self.row[i - 1]) ** 2) ** 0.5
-        return length
+        if self.num < 2:
+            return 0
+        return float(np.sum(np.sqrt(np.diff(self.col) ** 2 + np.diff(self.row) ** 2)))
 
     @classmethod
     def reset_counter(cls):
